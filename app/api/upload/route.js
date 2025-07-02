@@ -9,6 +9,19 @@ import { ChromaClient } from 'chromadb'
 
 export async function POST(request) {
   try {
+    // Log the content type for debugging
+    const contentType = request.headers.get('content-type')
+    console.log('Received request with Content-Type:', contentType)
+    
+    // Validate content type
+    if (!contentType || (!contentType.includes('multipart/form-data') && !contentType.includes('application/x-www-form-urlencoded'))) {
+      console.error('Invalid Content-Type:', contentType)
+      return NextResponse.json(
+        { error: 'Invalid Content-Type. Expected multipart/form-data or application/x-www-form-urlencoded' },
+        { status: 400 }
+      )
+    }
+    
     const formData = await request.formData()
     const clientId = formData.get('clientId')
     const files = formData.getAll('files')
@@ -103,17 +116,21 @@ export async function POST(request) {
     const splitDocs = await textSplitter.splitDocuments(documents)
     console.log(`Created ${splitDocs.length} chunks from ${documents.length} documents`)
 
-    // Initialize OpenAI embeddings
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: 'OpenAI API key not configured' },
-        { status: 500 }
-      )
+    // Initialize OpenAI embeddings (optional for upload)
+    let embeddings = null
+    if (process.env.OPENAI_API_KEY) {
+      try {
+        embeddings = new OpenAIEmbeddings({
+          openAIApiKey: process.env.OPENAI_API_KEY,
+        })
+        console.log('✅ OpenAI API key found - will create embeddings')
+      } catch (error) {
+        console.log('⚠️  Invalid OpenAI API key - will save documents without embeddings')
+        console.error('API key error:', error.message)
+      }
+    } else {
+      console.log('⚠️  No OpenAI API key - will save documents without embeddings')
     }
-
-    const embeddings = new OpenAIEmbeddings({
-      openAIApiKey: process.env.OPENAI_API_KEY,
-    })
 
     // Initialize Chroma client and create/update collection
     const chromaClient = new ChromaClient({
@@ -132,27 +149,80 @@ export async function POST(request) {
         console.log(`Collection ${collectionName} did not exist previously`)
       }
 
-      // Create new collection and add documents
-      console.log('Creating Chroma vectorstore...')
-      const vectorStore = await Chroma.fromDocuments(splitDocs, embeddings, {
-        collectionName: collectionName,
-        url: 'http://localhost:8000',
-      })
+      if (embeddings) {
+        // Create new collection and add documents with embeddings
+        console.log('Creating Chroma vectorstore with embeddings...')
+        try {
+          const vectorStore = await Chroma.fromDocuments(splitDocs, embeddings, {
+            collectionName: collectionName,
+            url: 'http://localhost:8000',
+          })
 
-      console.log(`Successfully created vectorstore with ${splitDocs.length} documents`)
+          console.log(`Successfully created vectorstore with ${splitDocs.length} documents`)
 
-      return NextResponse.json({
-        message: 'Files uploaded and processed successfully',
-        processedFiles: processedFiles,
-        totalChunks: splitDocs.length,
-        collectionName: collectionName,
-      })
+          return NextResponse.json({
+            message: 'Files uploaded and processed successfully with embeddings',
+            processedFiles: processedFiles,
+            totalChunks: splitDocs.length,
+            collectionName: collectionName,
+            hasEmbeddings: true,
+          })
+        } catch (embeddingError) {
+          console.error('Error creating embeddings:', embeddingError)
+          console.log('Falling back to saving documents without embeddings...')
+          
+          // Fall back to saving without embeddings
+          const documentsPath = join(process.cwd(), 'client_data', validClientId, 'processed_docs.json')
+          const docsData = splitDocs.map(doc => ({
+            pageContent: doc.pageContent,
+            metadata: doc.metadata
+          }))
+          
+          await writeFile(documentsPath, JSON.stringify(docsData, null, 2))
+          
+          return NextResponse.json({
+            message: 'Files uploaded and saved successfully (embedding creation failed - check your OpenAI API key)',
+            processedFiles: processedFiles,
+            totalChunks: splitDocs.length,
+            hasEmbeddings: false,
+            warning: 'Embedding creation failed - documents saved without AI search capability',
+          })
+        }
+      } else {
+        // Just save documents without embeddings
+        console.log('Saving documents without embeddings...')
+        
+        // Save documents to disk for later processing
+        const documentsPath = join(process.cwd(), 'client_data', validClientId, 'processed_docs.json')
+        const docsData = splitDocs.map(doc => ({
+          pageContent: doc.pageContent,
+          metadata: doc.metadata
+        }))
+        
+        await writeFile(documentsPath, JSON.stringify(docsData, null, 2))
+        
+        console.log(`Saved ${splitDocs.length} documents to disk`)
+
+        return NextResponse.json({
+          message: 'Files uploaded and saved successfully (no embeddings - add OpenAI API key to enable AI features)',
+          processedFiles: processedFiles,
+          totalChunks: splitDocs.length,
+          hasEmbeddings: false,
+        })
+      }
     } catch (error) {
-      console.error('Error creating vectorstore:', error)
-      return NextResponse.json(
-        { error: 'Failed to create vectorstore. Make sure ChromaDB is running on localhost:8000' },
-        { status: 500 }
-      )
+      console.error('Error processing documents:', error)
+      if (embeddings) {
+        return NextResponse.json(
+          { error: 'Failed to create vectorstore. Make sure ChromaDB is running on localhost:8000' },
+          { status: 500 }
+        )
+      } else {
+        return NextResponse.json(
+          { error: 'Failed to save documents. Please try again.' },
+          { status: 500 }
+        )
+      }
     }
   } catch (error) {
     console.error('Upload API error:', error)

@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar'
 
 export default function Home() {
   const [clientId, setClientId] = useState('')
+  const [isClientIdSubmitted, setIsClientIdSubmitted] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/query',
@@ -15,15 +16,9 @@ export default function Home() {
     },
   })
 
-  const handleClientIdSubmit = (e) => {
-    e.preventDefault()
-    if (!clientId.trim()) {
-      alert('Please enter a client ID')
-      return
-    }
-  }
 
-  if (!clientId) {
+
+  if (!isClientIdSubmitted) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md">
@@ -42,7 +37,15 @@ export default function Home() {
               </p>
             </div>
             
-            <form className="space-y-6" onSubmit={handleClientIdSubmit}>
+            <form className="space-y-6" onSubmit={(e) => {
+              e.preventDefault()
+              if (clientId.trim()) {
+                // Form is valid, proceed to main interface
+                setIsClientIdSubmitted(true)
+              } else {
+                alert('Please enter a client ID')
+              }
+            }}>
               <div>
                 <label htmlFor="clientId" className="block text-sm font-medium mb-3 text-gray-300">
                   Client ID
@@ -85,7 +88,10 @@ export default function Home() {
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
         clientId={clientId}
-        onClientChange={() => setClientId('')}
+        onClientChange={() => {
+          setClientId('')
+          setIsClientIdSubmitted(false)
+        }}
       />
       
       {/* Main Content */}
@@ -114,7 +120,10 @@ export default function Home() {
                 <span>Connected</span>
               </div>
               <button
-                onClick={() => setClientId('')}
+                onClick={() => {
+                  setClientId('')
+                  setIsClientIdSubmitted(false)
+                }}
                 className="neuro-btn px-4 py-2 text-sm"
               >
                 Change Client
