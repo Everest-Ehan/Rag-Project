@@ -121,5 +121,22 @@ temp/
 # Client data (if you want to ignore uploaded files)
 client_data/
 
-# ChromaDB data
+# ChromaDB data and database files
+chroma/
 chroma_db/
+*.sqlite3
+*.db
+*.sqlite
+chroma.sqlite3
+
+# Vector database files
+*.bin
+*.index
+*.faiss
+*.pkl
+*.pickle
+
+# Document embeddings and metadata
+embeddings/
+vectors/
+metadata/
