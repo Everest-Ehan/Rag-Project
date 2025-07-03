@@ -181,4 +181,28 @@ body {
   .no-scroll {
     overflow: hidden;
   }
+  
+  /* Animation utilities */
+  .animate-in {
+    animation-fill-mode: both;
+  }
+  
+  .slide-in-from-bottom-4 {
+    animation: slide-in-from-bottom-4 0.3s ease-out;
+  }
+  
+  @keyframes slide-in-from-bottom-4 {
+    from {
+      transform: translateY(1rem);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .duration-300 {
+    animation-duration: 0.3s;
+  }
 } 
