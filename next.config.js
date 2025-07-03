@@ -8,6 +8,7 @@ const nextConfig = {
       ...config.resolve.fallback,
       fs: false,
       path: false,
+      buffer: false,
     };
     return config;
   },
