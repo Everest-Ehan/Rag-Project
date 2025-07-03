@@ -177,12 +177,14 @@ export const process3DData = async (allChunks, embeddingData, fetchedData) => {
             width: 1
           }
         },
-        text: docChunks.map(chunk => chunk.text.substring(0, 100) + '...'),
+        text: docChunks.map(chunk => chunk.text.substring(0, 80) + (chunk.text.length > 80 ? '...' : '')),
         hovertemplate: 
-          '<b>%{text}</b><br>' +
-          'Document: ' + doc.name + '<br>' +
-          'Position: (%{x:.2f}, %{y:.2f}, %{z:.2f})<br>' +
-          '<extra></extra>',
+          // Document name as header, chunk number below, then space, then content
+          "<span style='font-size:13px; font-weight:600; color:" + colors[docIndex % colors.length] + ";'>" + doc.name + "</span><br>" +
+          "<span style='font-size:11px; color:#b0b0b0;'>Chunk <b>#%{customdata.chunkIndex}</b></span><br>" +
+          "<span style='display:inline-block; height:8px;'></span><br>" +
+          "<span style='font-size:12px; color:#e5e5e5;'>%{text}</span>" +
+          "<extra></extra>",
         customdata: docChunks.map(chunk => ({
           id: chunk.id,
           text: chunk.text,
@@ -194,4 +196,4 @@ export const process3DData = async (allChunks, embeddingData, fetchedData) => {
   })
 
   return traces
-} 
+}

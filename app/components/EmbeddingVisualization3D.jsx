@@ -97,6 +97,15 @@ export default function EmbeddingVisualization3D({
       borderwidth: 1,
       font: { color: '#e5e5e5' }
     },
+    hoverlabel: {
+      bgcolor: '#242424', // dark neumorphic background
+      bordercolor: '#333333',
+      font: {
+        color: '#e5e5e5',
+        size: 12,
+        family: 'Inter, system-ui, sans-serif'
+      }
+    },
     // Prevent unnecessary re-renders that reset camera position
     uirevision: 'preserve-camera'
   }
@@ -122,4 +131,4 @@ export default function EmbeddingVisualization3D({
       />
     </div>
   )
-} 
+}
