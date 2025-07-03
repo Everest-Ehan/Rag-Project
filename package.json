@@ -21,6 +21,8 @@
     "next": "14.0.4",
     "react": "^18",
     "react-dom": "^18",
+    "recharts": "^3.0.2",
+    "umap-js": "^1.4.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

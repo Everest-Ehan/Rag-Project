@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar'
 import Documents from './components/Documents'
 import Settings from './components/Settings'
 import Analytics from './components/Analytics'
+import EmbeddingVisualizer from './components/EmbeddingVisualizer'
 
 export default function Home() {
   const [clientId, setClientId] = useState('')
@@ -118,6 +119,7 @@ export default function Home() {
                 <h1 className="text-xl font-semibold">
                   {activeSection === 'dashboard' && 'AI Assistant'}
                   {activeSection === 'documents' && 'Document Manager'}
+                  {activeSection === 'embedding-visualizer' && 'Embedding Visualizer'}
                   {activeSection === 'analytics' && 'Analytics Dashboard'}
                   {activeSection === 'settings' && 'Settings'}
                 </h1>
@@ -244,6 +246,12 @@ export default function Home() {
           {activeSection === 'documents' && (
             <div className="neuro-card p-6 h-full">
               <Documents clientId={clientId} />
+            </div>
+          )}
+
+          {activeSection === 'embedding-visualizer' && (
+            <div className="neuro-card p-6 h-full">
+              <EmbeddingVisualizer clientId={clientId} />
             </div>
           )}
 
