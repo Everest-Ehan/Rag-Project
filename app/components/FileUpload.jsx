@@ -105,6 +105,8 @@ export default function FileUpload({ clientId }) {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onClick={() => document.getElementById('fileInput').click()}
+        style={{ cursor: 'pointer' }}
       >
         <div className="text-center space-y-4">
           <div className="w-16 h-16 mx-auto neuro-card-inset rounded-2xl flex items-center justify-center">
@@ -124,14 +126,12 @@ export default function FileUpload({ clientId }) {
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="fileInput" className="cursor-pointer">
-              <span className="block text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors">
-                Click to select files or drag and drop
-              </span>
-              <span className="block text-xs text-gray-500 mt-1">
-                Supports TXT and MD files
-              </span>
-            </label>
+            <span className="block text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors">
+              Click to select files or drag and drop
+            </span>
+            <span className="block text-xs text-gray-500 mt-1">
+              Supports TXT and MD files
+            </span>
             <input
               id="fileInput"
               type="file"
