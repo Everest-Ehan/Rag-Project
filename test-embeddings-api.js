@@ -320,7 +320,7 @@ async function checkPrerequisites() {
   }
   
   // Check if we need OpenAI API key
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
     console.log('⚠️  No OPENAI_API_KEY environment variable found')
     console.log('   Embeddings may not be created, but upload will still work')
   } else {
