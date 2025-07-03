@@ -36,7 +36,6 @@ export default function EmbeddingVisualizer({ clientId, embeddingData = null }) 
   
   // 3D specific state
   const [plotData3D, setPlotData3D] = useState([])
-  const [isRotating, setIsRotating] = useState(true)
 
   // Fetch embeddings from API
   const fetchEmbeddings = async (clientId) => {
@@ -294,17 +293,6 @@ export default function EmbeddingVisualizer({ clientId, embeddingData = null }) 
           <div className="neuro-card-inset p-6 h-full rounded-2xl flex flex-col overflow-hidden">
             <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <div className="flex items-center space-x-3">
-                {is3D && (
-                  <button
-                    onClick={() => setIsRotating(!isRotating)}
-                    className={`neuro-btn p-2 ${isRotating ? 'neuro-btn-primary' : ''}`}
-                    title={isRotating ? 'Stop rotation' : 'Start rotation'}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </button>
-                )}
                 <div className="flex items-center space-x-2 text-sm text-gray-400">
                   <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
                   <span>All Documents</span>
@@ -318,7 +306,6 @@ export default function EmbeddingVisualizer({ clientId, embeddingData = null }) 
             {is3D ? (
               <EmbeddingVisualization3D
                 plotData3D={plotData3D}
-                isRotating={isRotating}
                 onPointClick={handlePointClick}
               />
             ) : (
@@ -336,7 +323,7 @@ export default function EmbeddingVisualizer({ clientId, embeddingData = null }) 
             {/* Instructions */}
             <div className="text-center mt-4 flex-shrink-0">
               <p className="text-xs text-gray-500">
-                💡 {is3D ? 'Hover over points to see snippets • Click to view details • Use mouse to rotate/zoom' : 'Click points to view details • Hover for quick preview'}
+                💡 {is3D ? 'Hover over points to see snippets • Click to view details • Use mouse to zoom/pan' : 'Click points to view details • Hover for quick preview'}
               </p>
               {selectedChunk && (
                 <div className="mt-2 inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30">

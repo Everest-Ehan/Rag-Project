@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 
 // Dynamically import Plot to avoid SSR issues
@@ -20,31 +20,23 @@ const Plot = dynamic(() => import('react-plotly.js'), {
 
 export default function EmbeddingVisualization3D({
   plotData3D,
-  isRotating,
   onPointClick
 }) {
   const plotRef = useRef(null)
+  
+  // State to track camera position (using Plotly's default "home" position)
+  const [cameraPosition, setCameraPosition] = useState({
+    eye: { x: 1.25, y: 1.25, z: 1.25 },
+    center: { x: 0, y: 0, z: 0 },
+    up: { x: 0, y: 0, z: 1 }
+  })
 
-  // 3D Auto-rotation effect
-  useEffect(() => {
-    if (!plotRef.current || !isRotating || typeof window === 'undefined') return
-
-    const interval = setInterval(() => {
-      if (plotRef.current && plotRef.current.layout && window.Plotly) {
-        const currentEye = plotRef.current.layout.scene.camera.eye
-        const angle = 0.02
-        
-        const newX = currentEye.x * Math.cos(angle) - currentEye.y * Math.sin(angle)
-        const newY = currentEye.x * Math.sin(angle) + currentEye.y * Math.cos(angle)
-        
-        window.Plotly.relayout(plotRef.current, {
-          'scene.camera.eye': { x: newX, y: newY, z: currentEye.z }
-        })
-      }
-    }, 50)
-
-    return () => clearInterval(interval)
-  }, [isRotating])
+  // Handle camera position changes (when user manually rotates/zooms)
+  const handleRelayout = (eventData) => {
+    if (eventData['scene.camera']) {
+      setCameraPosition(eventData['scene.camera'])
+    }
+  }
 
   // 3D Plot configuration
   const plot3DLayout = {
@@ -83,9 +75,7 @@ export default function EmbeddingVisualization3D({
         tickfont: { color: '#b0b0b0' },
         titlefont: { color: '#e5e5e5' }
       },
-      camera: {
-        eye: { x: 1.5, y: 1.5, z: 1.5 }
-      }
+      camera: cameraPosition
     },
     paper_bgcolor: '#1a1a1a',
     plot_bgcolor: '#1a1a1a',
@@ -107,7 +97,8 @@ export default function EmbeddingVisualization3D({
       borderwidth: 1,
       font: { color: '#e5e5e5' }
     },
-    uirevision: 'true'
+    // Prevent unnecessary re-renders that reset camera position
+    uirevision: 'preserve-camera'
   }
 
   const plot3DConfig = {
@@ -125,6 +116,7 @@ export default function EmbeddingVisualization3D({
         layout={plot3DLayout}
         config={plot3DConfig}
         onClick={onPointClick}
+        onRelayout={handleRelayout}
         style={{ width: '100%', height: '100%' }}
         useResizeHandler={true}
       />

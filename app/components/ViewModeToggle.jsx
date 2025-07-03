@@ -40,7 +40,7 @@ export default function ViewModeToggle({ is3D, onToggle }) {
             {is3D ? 'Interactive 3D space' : 'Flat projection'}
           </div>
           <div className="text-xs text-gray-500 mt-1">
-            {is3D ? 'Rotate, zoom, and explore' : 'Click and hover to interact'}
+            {is3D ? 'Zoom, pan, and explore' : 'Click and hover to interact'}
           </div>
         </div>
       </div>
