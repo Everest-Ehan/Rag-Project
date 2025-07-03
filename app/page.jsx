@@ -4,11 +4,15 @@ import { useState } from 'react'
 import { useChat } from 'ai/react'
 import FileUpload from './components/FileUpload'
 import Sidebar from './components/Sidebar'
+import Documents from './components/Documents'
+import Settings from './components/Settings'
+import Analytics from './components/Analytics'
 
 export default function Home() {
   const [clientId, setClientId] = useState('')
   const [isClientIdSubmitted, setIsClientIdSubmitted] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [activeSection, setActiveSection] = useState('dashboard')
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/query',
     body: {
@@ -88,6 +92,8 @@ export default function Home() {
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
         clientId={clientId}
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
         onClientChange={() => {
           setClientId('')
           setIsClientIdSubmitted(false)
@@ -109,7 +115,12 @@ export default function Home() {
                 </svg>
               </button>
               <div>
-                <h1 className="text-xl font-semibold">AI Assistant</h1>
+                <h1 className="text-xl font-semibold">
+                  {activeSection === 'dashboard' && 'AI Assistant'}
+                  {activeSection === 'documents' && 'Document Manager'}
+                  {activeSection === 'analytics' && 'Analytics Dashboard'}
+                  {activeSection === 'settings' && 'Settings'}
+                </h1>
                 <p className="text-sm text-gray-400">Client: <span className="text-blue-400">{clientId}</span></p>
               </div>
             </div>
@@ -133,98 +144,120 @@ export default function Home() {
         </header>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4">
-          {/* Upload Section */}
-          <div className="lg:w-1/3">
-            <div className="neuro-card p-6 h-full">
-              <FileUpload clientId={clientId} />
-            </div>
-          </div>
-
-          {/* Chat Section */}
-          <div className="lg:w-2/3 flex flex-col">
-            <div className="neuro-card flex-1 flex flex-col">
-              {/* Chat Messages */}
-              <div className="flex-1 p-6 overflow-hidden">
-                <div className="h-full overflow-y-auto space-y-4 pr-2">
-                  {messages.length === 0 ? (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center space-y-4">
-                        <div className="w-20 h-20 mx-auto neuro-card-inset rounded-2xl flex items-center justify-center">
-                          <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-lg font-medium">Ready to chat!</p>
-                          <p className="text-gray-500 text-sm">Upload documents and start asking questions</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${
-                          message.role === 'user' ? 'justify-end' : 'justify-start'
-                        }`}
-                      >
-                        <div
-                          className={`rounded-2xl px-4 py-3 ${
-                            message.role === 'user'
-                              ? 'message-user'
-                              : 'message-assistant'
-                          }`}
-                        >
-                          {message.content}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="message-assistant">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse delay-75"></div>
-                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse delay-150"></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+        <div className="flex-1 p-4">
+          {activeSection === 'dashboard' && (
+            <div className="flex flex-col lg:flex-row gap-4 h-full">
+              {/* Upload Section */}
+              <div className="lg:w-1/3">
+                <div className="neuro-card p-6 h-full">
+                  <FileUpload clientId={clientId} />
                 </div>
               </div>
 
-              {/* Chat Input */}
-              <div className="p-6 border-t border-gray-700">
-                <form onSubmit={handleSubmit} className="flex space-x-3">
-                  <input
-                    className="neuro-input flex-1"
-                    value={input}
-                    placeholder="Ask me anything about your documents..."
-                    onChange={handleInputChange}
-                    disabled={isLoading}
-                  />
-                  <button
-                    type="submit"
-                    disabled={isLoading || !input.trim()}
-                    className="neuro-btn neuro-btn-primary px-6 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? (
-                      <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
-                    )}
-                  </button>
-                </form>
+              {/* Chat Section */}
+              <div className="lg:w-2/3 flex flex-col">
+                <div className="neuro-card flex-1 flex flex-col">
+                  {/* Chat Messages */}
+                  <div className="flex-1 p-6 overflow-hidden">
+                    <div className="h-full overflow-y-auto space-y-4 pr-2">
+                      {messages.length === 0 ? (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center space-y-4">
+                            <div className="w-20 h-20 mx-auto neuro-card-inset rounded-2xl flex items-center justify-center">
+                              <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="text-gray-400 text-lg font-medium">Ready to chat!</p>
+                              <p className="text-gray-500 text-sm">Upload documents and start asking questions</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        messages.map((message) => (
+                          <div
+                            key={message.id}
+                            className={`flex ${
+                              message.role === 'user' ? 'justify-end' : 'justify-start'
+                            }`}
+                          >
+                            <div
+                              className={`rounded-2xl px-4 py-3 ${
+                                message.role === 'user'
+                                  ? 'message-user'
+                                  : 'message-assistant'
+                              }`}
+                            >
+                              {message.content}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      
+                      {isLoading && (
+                        <div className="flex justify-start">
+                          <div className="message-assistant">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse delay-75"></div>
+                              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse delay-150"></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Chat Input */}
+                  <div className="p-6 border-t border-gray-700">
+                    <form onSubmit={handleSubmit} className="flex space-x-3">
+                      <input
+                        className="neuro-input flex-1"
+                        value={input}
+                        placeholder="Ask me anything about your documents..."
+                        onChange={handleInputChange}
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="submit"
+                        disabled={isLoading || !input.trim()}
+                        className="neuro-btn neuro-btn-primary px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? (
+                          <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {activeSection === 'documents' && (
+            <div className="neuro-card p-6 h-full">
+              <Documents clientId={clientId} />
+            </div>
+          )}
+
+          {activeSection === 'analytics' && (
+            <div className="neuro-card p-6 h-full">
+              <Analytics clientId={clientId} />
+            </div>
+          )}
+
+          {activeSection === 'settings' && (
+            <div className="neuro-card p-6 h-full">
+              <Settings clientId={clientId} />
+            </div>
+          )}
         </div>
       </div>
     </div>
