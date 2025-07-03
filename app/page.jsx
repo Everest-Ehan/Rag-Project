@@ -20,6 +20,7 @@ export default function Home() {
       clientId: clientId,
     },
   })
+  console.log(process.env.OPENAI_API_KEY)
 
 
 
@@ -251,7 +252,28 @@ export default function Home() {
 
           {activeSection === 'embedding-visualizer' && (
             <div className="neuro-card p-6 h-full">
-              <EmbeddingVisualizer clientId={clientId} />
+              {/* TODO: Replace null with real embedding data structure:
+                  embeddingData={{
+                    documents: [
+                      {
+                        id: 'doc-1',
+                        name: 'Document Name',
+                        chunks: [
+                          {
+                            id: 'chunk-1',
+                            text: 'Chunk text content...',
+                            vector: [0.1, 0.2, ...], // embedding vector
+                            chunkIndex: 0
+                          }
+                        ]
+                      }
+                    ]
+                  }}
+              */}
+              <EmbeddingVisualizer 
+                clientId={clientId} 
+                embeddingData={null}
+              />
             </div>
           )}
 
