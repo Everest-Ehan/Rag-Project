@@ -118,10 +118,10 @@ export async function POST(request) {
 
     // Initialize OpenAI embeddings (optional for upload)
     let embeddings = null
-    if (process.env.OPENAI_API_KEY) {
+    if (process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
       try {
         embeddings = new OpenAIEmbeddings({
-          openAIApiKey: process.env.OPENAI_API_KEY,
+          openAIApiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
         })
         console.log('✅ OpenAI API key found - will create embeddings')
       } catch (error) {

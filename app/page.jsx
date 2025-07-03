@@ -8,6 +8,7 @@ import Documents from './components/Documents'
 import Settings from './components/Settings'
 import Analytics from './components/Analytics'
 import EmbeddingVisualizer from './components/EmbeddingVisualizer'
+import dotenv from 'dotenv'
 
 export default function Home() {
   const [clientId, setClientId] = useState('')
@@ -20,7 +21,9 @@ export default function Home() {
       clientId: clientId,
     },
   })
-  console.log(process.env.OPENAI_API_KEY)
+  dotenv.config()
+  console.log("process.env.OPENAI_API_KEY", process.env.OPENAI_API_KEY)
+  console.log("process.env.NEXT_PUBLIC_OPENAI_API_KEY", process.env.NEXT_PUBLIC_OPENAI_API_KEY)
 
 
 

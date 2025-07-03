@@ -34,12 +34,12 @@ export async function POST(request) {
     const validClientId = clientId.trim()
 
     // Initialize embeddings
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
       return new Response('OpenAI API key not configured', { status: 500 })
     }
 
     const embeddings = new OpenAIEmbeddings({
-      openAIApiKey: process.env.OPENAI_API_KEY,
+      openAIApiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
     })
 
     // Connect to Chroma vectorstore
