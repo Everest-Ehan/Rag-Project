@@ -1,57 +1,87 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { createClient } from '@supabase/supabase-js'
+import { readdir, readFile } from 'fs/promises'
+import { join } from 'path'
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('clientId')
+    const useSupabase = searchParams.get('useSupabase') === 'true'
 
     if (!clientId) {
       return NextResponse.json({ error: 'Client ID is required' }, { status: 400 })
     }
 
-    const clientDir = path.join(process.cwd(), 'client_data', clientId, 'docs')
-    
-    // Check if client directory exists
-    if (!fs.existsSync(clientDir)) {
-      return NextResponse.json({ documents: [] })
-    }
-
-    // Read all files in the client directory
-    const files = fs.readdirSync(clientDir)
     const documents = []
 
-    for (const file of files) {
-      const filePath = path.join(clientDir, file)
-      const stats = fs.statSync(filePath)
-      
-      // Only include files (not directories)
-      if (stats.isFile()) {
-        const fileExtension = path.extname(file).toLowerCase()
+    if (useSupabase) {
+      // Get documents from Supabase database
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      )
+
+      const { data: dbDocuments, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('user_id', clientId)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching documents from database:', error)
+        return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 })
+      }
+
+      // Convert database records to document format
+      documents.push(...dbDocuments.map(doc => ({
+        id: doc.id,
+        name: doc.filename,
+        size: doc.file_size,
+        type: doc.file_type,
+        uploadDate: doc.upload_date || doc.created_at,
+        path: doc.file_path,
+        preview: doc.content,
+        source: 'supabase'
+      })))
+
+    } else {
+      // Get documents from local file system (for guest users)
+      try {
+        const clientDataDir = join(process.cwd(), 'client_data', clientId, 'docs')
+        const files = await readdir(clientDataDir)
         
-        // Only include .txt and .md files
-        if (fileExtension === '.txt' || fileExtension === '.md') {
-          documents.push({
-            id: file,
-            name: file,
-            size: stats.size,
-            sizeFormatted: formatFileSize(stats.size),
-            type: fileExtension === '.txt' ? 'text' : 'markdown',
-            uploadedAt: stats.mtime,
-            uploadedAtFormatted: stats.mtime.toLocaleDateString()
-          })
+        for (const file of files) {
+          if (file.endsWith('.txt') || file.endsWith('.md')) {
+            const filePath = join(clientDataDir, file)
+            const stats = await readFile(filePath, 'utf-8')
+            
+            documents.push({
+              name: file,
+              size: stats.length,
+              type: file.split('.').pop(),
+              uploadDate: new Date().toISOString(),
+              path: filePath,
+              preview: stats.substring(0, 200),
+              source: 'local'
+            })
+          }
         }
+      } catch (error) {
+        // Directory might not exist for new users
+        console.log('No local documents found for client:', clientId)
       }
     }
 
-    // Sort documents by upload date (newest first)
-    documents.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))
+    return NextResponse.json({
+      documents,
+      count: documents.length,
+      clientId
+    })
 
-    return NextResponse.json({ documents })
   } catch (error) {
-    console.error('Error fetching documents:', error)
-    return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 })
+    console.error('Documents API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 

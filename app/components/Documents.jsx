@@ -36,7 +36,11 @@ export default function Documents({ clientId }) {
   const loadDocuments = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/documents?clientId=${clientId}`)
+      // Check if user is authenticated (clientId is a UUID)
+      const isAuthenticated = clientId && clientId.length > 20 // UUIDs are longer than 20 chars
+      const useSupabase = isAuthenticated
+      
+      const response = await fetch(`/api/documents?clientId=${clientId}&useSupabase=${useSupabase}`)
       const data = await response.json()
       
       if (response.ok) {
@@ -78,13 +82,23 @@ export default function Documents({ clientId }) {
     setSelectedDocument(doc)
     
     try {
-      const response = await fetch(`/api/documents/content?clientId=${clientId}&fileName=${doc.name}`)
+      // Check if user is authenticated (clientId is a UUID)
+      const isAuthenticated = clientId && clientId.length > 20 // UUIDs are longer than 20 chars
+      const useSupabase = isAuthenticated
+      
+      const url = `/api/documents/content?clientId=${clientId}&fileName=${doc.name}&useSupabase=${useSupabase}`
+      console.log('Fetching document content from:', url)
+      
+      const response = await fetch(url)
       const data = await response.json()
+      
+      console.log('Content API response:', { status: response.status, data })
       
       if (response.ok) {
         setDocumentContent(data.content)
       } else {
-        setDocumentContent('Error loading document content')
+        console.error('Content API error:', data.error)
+        setDocumentContent(`Error loading document content: ${data.error}`)
       }
     } catch (error) {
       console.error('Error loading document content:', error)

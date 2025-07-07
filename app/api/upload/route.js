@@ -128,17 +128,17 @@ export async function POST(request) {
           }
         } else {
           // For guest users: process the file directly
-          const bytes = await file.arrayBuffer()
-          const buffer = Buffer.from(bytes)
+        const bytes = await file.arrayBuffer()
+        const buffer = Buffer.from(bytes)
           
           fileName = file.name
           fileSize = file.size
-          
-          // Save file to disk
+        
+        // Save file to disk
           const filePath = join(docsDir, fileName)
-          await writeFile(filePath, buffer)
-          
-          // Read and process file content
+        await writeFile(filePath, buffer)
+        
+        // Read and process file content
           fileContent = await readFile(filePath, 'utf-8')
           
           console.log(`Processed local file: ${fileName}`)
@@ -155,6 +155,36 @@ export async function POST(request) {
             storagePath: useSupabaseStorage ? file.path : null,
           },
         })
+
+        // Save file metadata to database if using Supabase storage
+        if (useSupabaseStorage) {
+          try {
+                         const { error: dbError } = await supabase
+               .from('documents')
+               .insert({
+                 user_id: validClientId, // Using clientId as user_id for now
+                 filename: fileName,
+                 file_path: file.path,
+                 file_size: fileSize,
+                 file_type: fileName.split('.').pop(),
+                 content: fileContent.substring(0, 1000), // Store first 1000 chars as preview
+                 upload_date: new Date().toISOString(),
+                 metadata: {
+                   storagePath: file.path,
+                   uploadDate: new Date().toISOString(),
+                   processed: true
+                 }
+               })
+            
+            if (dbError) {
+              console.error('Error saving to database:', dbError)
+            } else {
+              console.log(`Saved file metadata to database: ${fileName}`)
+            }
+          } catch (dbError) {
+            console.error('Database error:', dbError)
+          }
+        }
         
         documents.push(doc)
         processedFiles++
@@ -198,6 +228,7 @@ export async function POST(request) {
     // Initialize Chroma client and create/update collection
     const chromaClient = new ChromaClient({
       path: `http://localhost:8000`,
+      apiVersion: 'v2'
     })
 
     const collectionName = `client_${validClientId.replace(/[^a-zA-Z0-9]/g, '_')}`
@@ -219,6 +250,7 @@ export async function POST(request) {
           const vectorStore = await Chroma.fromDocuments(splitDocs, embeddings, {
             collectionName: collectionName,
             url: 'http://localhost:8000',
+            apiVersion: 'v2'
           })
 
           console.log(`Successfully created vectorstore with ${splitDocs.length} documents`)

@@ -24,9 +24,9 @@ export default function Home() {
       clientId: user?.id || clientId,
     },
   })
-  dotenv.config()
-  console.log("process.env.OPENAI_API_KEY", process.env.OPENAI_API_KEY)
-  console.log("process.env.NEXT_PUBLIC_OPENAI_API_KEY", process.env.NEXT_PUBLIC_OPENAI_API_KEY)
+  // dotenv.config()
+  // console.log("process.env.OPENAI_API_KEY", process.env.OPENAI_API_KEY)
+  // console.log("process.env.NEXT_PUBLIC_OPENAI_API_KEY", process.env.NEXT_PUBLIC_OPENAI_API_KEY)
 
 
 
@@ -129,7 +129,7 @@ export default function Home() {
       <Sidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
-        clientId={user?.email || clientId}
+        clientId={user?.id || clientId}
         user={user}
         activeSection={activeSection}
         onSectionChange={setActiveSection}

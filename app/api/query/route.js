@@ -44,19 +44,27 @@ export async function POST(request) {
 
     // Connect to Chroma vectorstore
     const collectionName = `client_${validClientId.replace(/[^a-zA-Z0-9]/g, '_')}`
-
+    console.log(collectionName)
+    // ChromaDB converts hyphens to underscores in collection names
+    const normalizedCollectionName = collectionName.replace(/-/g, '_')
+    console.log(normalizedCollectionName)
     let vectorStore
     try {
       // Initialize ChromaDB client first
       const chromaClient = new ChromaClient({
         path: 'http://localhost:8000',
+        apiVersion: 'v2'
       })
-
       // Check if collection exists
       let collections
       try {
         collections = await chromaClient.listCollections()
-        const collectionExists = collections.some(col => col.name === collectionName)
+       
+        
+        
+        // Collections are strings, not objects
+        const collectionExists = collections.includes(normalizedCollectionName)
+        console.log('Collection exists:', collectionExists)
         
         if (!collectionExists) {
           return new Response(
@@ -74,8 +82,9 @@ export async function POST(request) {
 
       // Connect to existing vectorstore
       vectorStore = new Chroma(embeddings, {
-        collectionName: collectionName,
+        collectionName: normalizedCollectionName,
         url: 'http://localhost:8000',
+        apiVersion: 'v2'
       })
     } catch (error) {
       console.error('Error connecting to vectorstore:', error)
@@ -85,21 +94,41 @@ export async function POST(request) {
       )
     }
 
-    // Perform similarity search
-    let relevantDocs
+    // Perform similarity search using ChromaDB client directly
+    let relevantDocs = []
     try {
-      console.log(`Searching for relevant documents in collection: ${collectionName}`)
+      console.log(`Searching for relevant documents in collection: ${normalizedCollectionName}`)
       console.log(`Query: "${query}"`)
       
-      // Try similarity search with basic parameters
-      relevantDocs = await vectorStore.similaritySearch(query, 4)
-      console.log(`Found ${relevantDocs.length} relevant documents`)
+      // Use ChromaDB client directly to avoid LangChain wrapper issues
+      const chromaClient = new ChromaClient({
+        path: 'http://localhost:8000',
+        apiVersion: 'v2'
+      })
       
-      if (relevantDocs.length === 0) {
+      const collection = await chromaClient.getCollection({ name: normalizedCollectionName })
+      
+      // Generate embeddings for the query
+      const queryEmbedding = await embeddings.embedQuery(query)
+      
+      // Query the collection directly with embeddings
+      const results = await collection.query({
+        queryEmbeddings: [queryEmbedding],
+        nResults: 4
+      })
+      
+      
+      if (results.documents && results.documents[0]) {
+        // Convert ChromaDB results to Document format
+        relevantDocs = results.documents[0].map((doc, index) => ({
+          pageContent: doc,
+          metadata: results.metadatas ? results.metadatas[0][index] : {}
+        }))
+        console.log(`Found ${relevantDocs.length} relevant documents`)
+      } else {
         console.log('No relevant documents found for this query')
-        // Continue anyway - let the AI respond that no relevant info was found
-        relevantDocs = []
       }
+      
     } catch (error) {
       console.error('Error performing similarity search:', error)
       console.error('Error details:', error.message)
@@ -160,16 +189,22 @@ Instructions:
     ]
 
     console.log('Sending request to OpenAI...')
-
-    // Create streaming response using modern Vercel AI SDK
-    const result = streamText({
+    
+    // Temporarily set OPENAI_API_KEY for the AI SDK
+    const originalApiKey = process.env.OPENAI_API_KEY
+    process.env.OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY
+    
+    const result = await streamText({
       model: openai('gpt-3.5-turbo'),
       messages: openaiMessages,
       temperature: 0.7,
       maxTokens: 1000,
     })
-
+    
     // Return streaming response
+    if(!result){
+      return new Response('Internal server error', { status: 500 })
+    }
     return result.toAIStreamResponse()
   } catch (error) {
     console.error('Query API error:', error)
