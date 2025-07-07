@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-export default function Sidebar({ isOpen, onClose, clientId, onClientChange, activeSection, onSectionChange }) {
+export default function Sidebar({ isOpen, onClose, clientId, user, onClientChange, activeSection, onSectionChange }) {
 
   const menuItems = [
     {
@@ -119,26 +119,38 @@ export default function Sidebar({ isOpen, onClose, clientId, onClientChange, act
         <div className="p-4 border-t border-gray-700">
           <div className="neuro-card-inset p-4 rounded-xl">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-300">Current Client</span>
+              <span className="text-sm font-medium text-gray-300">
+                {user ? 'Current User' : 'Current Client'}
+              </span>
               <div className="w-2 h-2 bg-green-400 rounded-full"></div>
             </div>
             <div className="flex items-center space-x-2 mb-3">
               <div className="w-8 h-8 neuro-card-inset rounded-lg flex items-center justify-center">
+                {user ? (
+                  <span className="text-xs font-medium text-blue-400">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </span>
+                ) : (
                 <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-blue-400 truncate">{clientId}</p>
-                <p className="text-xs text-gray-500">Active session</p>
+                <p className="text-xs text-gray-500">
+                  {user ? 'Authenticated' : 'Guest session'}
+                </p>
               </div>
             </div>
+            {!user && (
             <button
               onClick={onClientChange}
               className="w-full neuro-btn text-sm py-2"
             >
               Switch Client
             </button>
+            )}
           </div>
         </div>
 

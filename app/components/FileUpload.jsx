@@ -1,8 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '../../hooks/useAuth'
+import { uploadFile, STORAGE_BUCKETS, generateFileName } from '../../lib/storage'
 
 export default function FileUpload({ clientId }) {
+  const { user } = useAuth()
   const [files, setFiles] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState('')
@@ -41,11 +44,50 @@ export default function FileUpload({ clientId }) {
     setUploadStatus('Uploading and processing files...')
 
     try {
+      let uploadedFiles = []
+      
+      // If user is authenticated, upload to Supabase storage first
+      if (user) {
+        setUploadStatus('Uploading files to secure storage...')
+        
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i]
+          const fileName = generateFileName(file.name, user.id)
+          
+          console.log('Uploading file:', file.name, 'to path:', fileName, 'for user:', user.id)
+          const { data, error } = await uploadFile(
+            STORAGE_BUCKETS.DOCUMENTS,
+            file,
+            fileName
+          )
+          
+          if (error) {
+            throw new Error(`Failed to upload ${file.name}: ${error.message}`)
+          }
+          
+          uploadedFiles.push({
+            name: file.name,
+            path: fileName,
+            size: file.size
+          })
+        }
+        
+        setUploadStatus('Processing uploaded files...')
+      }
+
+      // Send to processing API
       const formData = new FormData()
       formData.append('clientId', clientId)
       
+      if (user && uploadedFiles.length > 0) {
+        // For authenticated users, send file paths instead of files
+        formData.append('uploadedFiles', JSON.stringify(uploadedFiles))
+        formData.append('useSupabaseStorage', 'true')
+      } else {
+        // For guest users, send files directly
       for (let i = 0; i < files.length; i++) {
         formData.append('files', files[i])
+        }
       }
 
       const response = await fetch('/api/upload', {
@@ -126,12 +168,12 @@ export default function FileUpload({ clientId }) {
           </div>
           
           <div className="space-y-2">
-            <span className="block text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors">
-              Click to select files or drag and drop
-            </span>
-            <span className="block text-xs text-gray-500 mt-1">
-              Supports TXT and MD files
-            </span>
+              <span className="block text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors">
+                Click to select files or drag and drop
+              </span>
+              <span className="block text-xs text-gray-500 mt-1">
+                Supports TXT and MD files
+              </span>
             <input
               id="fileInput"
               type="file"

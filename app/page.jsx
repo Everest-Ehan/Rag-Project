@@ -8,9 +8,12 @@ import Documents from './components/Documents'
 import Settings from './components/Settings'
 import Analytics from './components/Analytics'
 import EmbeddingVisualizer from './components/EmbeddingVisualizer'
+import UserProfile from './components/UserProfile'
+import { useAuth } from '../hooks/useAuth'
 import dotenv from 'dotenv'
 
 export default function Home() {
+  const { user, loading: authLoading } = useAuth()
   const [clientId, setClientId] = useState('')
   const [isClientIdSubmitted, setIsClientIdSubmitted] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -18,7 +21,7 @@ export default function Home() {
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/query',
     body: {
-      clientId: clientId,
+      clientId: user?.id || clientId,
     },
   })
   dotenv.config()
@@ -27,7 +30,24 @@ export default function Home() {
 
 
 
-  if (!isClientIdSubmitted) {
+  // Show loading screen while auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 mx-auto neuro-card-inset rounded-2xl flex items-center justify-center">
+            <svg className="w-8 h-8 animate-spin text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </div>
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // If not authenticated and no client ID, show welcome screen with auth
+  if (!user && !isClientIdSubmitted) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md">
@@ -46,18 +66,30 @@ export default function Home() {
               </p>
             </div>
             
-            <form className="space-y-6" onSubmit={(e) => {
+            {/* Authentication Options */}
+            <div className="space-y-4">
+              <UserProfile />
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-600"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-gray-800 text-gray-400">or continue as guest</span>
+                </div>
+              </div>
+              
+              <form className="space-y-4" onSubmit={(e) => {
               e.preventDefault()
               if (clientId.trim()) {
-                // Form is valid, proceed to main interface
                 setIsClientIdSubmitted(true)
               } else {
                 alert('Please enter a client ID')
               }
             }}>
               <div>
-                <label htmlFor="clientId" className="block text-sm font-medium mb-3 text-gray-300">
-                  Client ID
+                  <label htmlFor="clientId" className="block text-sm font-medium mb-2 text-gray-300">
+                    Guest Client ID
                 </label>
                 <input
                   id="clientId"
@@ -73,11 +105,12 @@ export default function Home() {
               
               <button
                 type="submit"
-                className="neuro-btn neuro-btn-primary w-full"
+                  className="neuro-btn w-full"
               >
-                Enter Chat
+                  Continue as Guest
               </button>
             </form>
+            </div>
             
             <div className="text-center">
               <p className="text-xs text-gray-500">
@@ -96,7 +129,8 @@ export default function Home() {
       <Sidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
-        clientId={clientId}
+        clientId={user?.email || clientId}
+        user={user}
         activeSection={activeSection}
         onSectionChange={setActiveSection}
         onClientChange={() => {
@@ -127,7 +161,13 @@ export default function Home() {
                   {activeSection === 'analytics' && 'Analytics Dashboard'}
                   {activeSection === 'settings' && 'Settings'}
                 </h1>
-                <p className="text-sm text-gray-400">Client: <span className="text-blue-400">{clientId}</span></p>
+                <p className="text-sm text-gray-400">
+                  {user ? (
+                    <>User: <span className="text-blue-400">{user.email}</span></>
+                  ) : (
+                    <>Client: <span className="text-blue-400">{clientId}</span></>
+                  )}
+                </p>
               </div>
             </div>
             
@@ -136,6 +176,11 @@ export default function Home() {
                 <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 <span>Connected</span>
               </div>
+              
+              {/* User Profile or Guest Controls */}
+              {user ? (
+                <UserProfile />
+              ) : (
               <button
                 onClick={() => {
                   setClientId('')
@@ -145,6 +190,7 @@ export default function Home() {
               >
                 Change Client
               </button>
+              )}
             </div>
           </div>
         </header>
@@ -156,7 +202,7 @@ export default function Home() {
               {/* Upload Section */}
               <div className="lg:w-1/3">
                 <div className="neuro-card p-6 h-full">
-                  <FileUpload clientId={clientId} />
+                  <FileUpload clientId={user?.id || clientId} />
                 </div>
               </div>
 
@@ -249,14 +295,14 @@ export default function Home() {
 
           {activeSection === 'documents' && (
             <div className="neuro-card p-6 h-full">
-              <Documents clientId={clientId} />
+              <Documents clientId={user?.id || clientId} />
             </div>
           )}
 
           {activeSection === 'embedding-visualizer' && (
             <div className="neuro-card p-6 h-full">
               <EmbeddingVisualizer 
-                clientId={clientId} 
+                clientId={user?.id || clientId} 
                 embeddingData={null}
               />
             </div>
@@ -264,13 +310,13 @@ export default function Home() {
 
           {activeSection === 'analytics' && (
             <div className="neuro-card p-6 h-full">
-              <Analytics clientId={clientId} />
+              <Analytics clientId={user?.id || clientId} />
             </div>
           )}
 
           {activeSection === 'settings' && (
             <div className="neuro-card p-6 h-full">
-              <Settings clientId={clientId} />
+              <Settings clientId={user?.id || clientId} />
             </div>
           )}
         </div>
